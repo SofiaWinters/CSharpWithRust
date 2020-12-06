@@ -1,0 +1,10 @@
+[package]
+name = "csharp-with-rust"
+version = "0.1.0"
+authors = ["Sofia Winters <a@sofia.win>"]
+edition = "2018"
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
