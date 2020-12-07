@@ -119,6 +119,41 @@ pub extern "C" fn array_function(array_ptr: *mut i32, len: i32) {
 }
 
 #[no_mangle]
+pub extern "C" fn get_values_via_out(int_ptr: *mut i32, enum1_ptr: *mut i32, enum2_ptr: *mut i32) {
+    unsafe {
+        *int_ptr = 123;
+        *enum1_ptr = 1;
+        enum2_ptr.write(2);
+    };
+}
+
+#[no_mangle]
+pub extern "C" fn get_bytes_with_index_as_value_buf_copy(bytes_ptr: *mut u8, len: i32) -> i32 {
+    let bytes_to_write = (0..10).collect::<Vec<u8>>();
+    if (len as usize) < bytes_to_write.len() {
+        return -1;
+    }
+
+    unsafe {
+        std::ptr::copy_nonoverlapping(bytes_to_write.as_ptr(), bytes_ptr, bytes_to_write.len())
+    };
+    bytes_to_write.len() as i32
+}
+
+#[no_mangle]
+pub extern "C" fn get_bytes_with_index_as_value_ptr(bytes_ptr: *mut u8, len: i32) -> i32 {
+    let len_to_write = 10;
+    if (len as usize) < len_to_write {
+        return -1;
+    }
+
+    for i in 0..len_to_write {
+        unsafe { bytes_ptr.add(i).write(i as u8) };
+    }
+    len_to_write as i32
+}
+
+#[no_mangle]
 pub extern "C" fn call_callback(callback: extern "C" fn()) {
     (callback)();
 }

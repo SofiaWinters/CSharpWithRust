@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -30,11 +31,25 @@ namespace CSharpWithRust
         public static extern int string_count_utf16_with_null([MarshalAs(UnmanagedType.LPWStr)] string strPtr);
 
         [DllImport(DLL)]
-        public static extern int get_string_ascii(byte[] bufPtr, int lenBytes);
+        public static extern int get_string_ascii([In][Out] byte[] bufPtr, int lenBytes);
         [DllImport(DLL)]
-        public static extern int get_string_utf8(byte[] bufPtr, int lenBytes);
+        public static extern int get_string_utf8([In][Out] byte[] bufPtr, int lenBytes);
         [DllImport(DLL)]
-        public static extern int get_string_utf16(byte[] bufPtr, int lenBytes);
+        public static extern int get_string_utf16([In][Out] byte[] bufPtr, int lenBytes);
+
+        public enum EnumType : int
+        {
+            None,
+            First,
+            Second,
+        }
+
+        [DllImport(DLL)]
+        public static extern void get_values_via_out(out int i32, out EnumType e1, out EnumType e2);
+        [DllImport(DLL)]
+        public static extern int get_bytes_with_index_as_value_ptr([In][Out] byte[] bufPtr, int lenBytes);
+        [DllImport(DLL)]
+        public static extern int get_bytes_with_index_as_value_buf_copy([In][Out] byte[] bufPtr, int lenBytes);
 
         [DllImport(DLL)]
         public static extern void call_callback(Action callback);
@@ -100,6 +115,33 @@ namespace CSharpWithRust
             Assert.AreEqual(unistr, Encoding.UTF8.GetString(buffer, 0, len));
             len = Rust.get_string_utf16(buffer, buffer.Length);
             Assert.AreEqual(unistr, Encoding.Unicode.GetString(buffer, 0, len));
+        }
+
+        [TestMethod]
+        public void CanGetValuesViaOut()
+        {
+            Rust.get_values_via_out(out var i32, out var e1, out var e2);
+            Assert.AreEqual(123, i32);
+            Assert.AreEqual(Rust.EnumType.First, e1);
+            Assert.AreEqual(Rust.EnumType.Second, e2);
+        }
+
+        [TestMethod]
+        public void CanGetBytesViaArgument()
+        {
+            {
+                var byteArray = new byte[100];
+                var len = Rust.get_bytes_with_index_as_value_ptr(byteArray, byteArray.Length);
+                Assert.AreEqual(10, len);
+                CollectionAssert.AreEqual(Enumerable.Range(0, len).Select(v => (byte)v).ToArray(), byteArray.Take(len).ToArray());
+            }
+
+            {
+                var byteArray = new byte[100];
+                var len = Rust.get_bytes_with_index_as_value_buf_copy(byteArray, byteArray.Length);
+                Assert.AreEqual(10, len);
+                CollectionAssert.AreEqual(Enumerable.Range(0, len).Select(v => (byte)v).ToArray(), byteArray.Take(len).ToArray());
+            }
         }
 
         [TestMethod]
